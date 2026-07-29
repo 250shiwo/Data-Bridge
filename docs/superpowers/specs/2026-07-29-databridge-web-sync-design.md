@@ -94,7 +94,7 @@ DataBridge/
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| GET | `/api/browse` | 参数：连接别名、库、表、页码、页大小、筛选、排序；返回行数据+总数 |
+| POST | `/api/browse` | body：连接别名、库、表、页码、页大小、筛选、排序；返回行数据+总数（筛选条件为结构化列表，故用 POST body 传参） |
 | POST | `/api/rows/insert` | 源连接/库/表 + 勾选行主键列表 + `confirm`；追加到目标表 |
 | POST | `/api/rows/replace` | 源勾选主键列表 + 目标勾选主键列表（按序配对）+ `confirm`；替换目标行 |
 
