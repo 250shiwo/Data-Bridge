@@ -1,0 +1,9 @@
+# 本地凭据与密钥，绝不进 git
+data/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+*.egg-info/
