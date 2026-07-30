@@ -8,7 +8,7 @@ from pathlib import Path
 from mcp.server.fastmcp import FastMCP
 
 from databridge.engine.connection import open_connection
-from databridge.errors import DataBridgeError
+from databridge.errors import DataBridgeError, InvalidQueryError
 from databridge.service import SyncService
 from databridge.storage.connections import ConnectionStore
 
@@ -86,5 +86,25 @@ def create_mcp(data_dir: Path | None = None, connect=open_connection) -> FastMCP
             {"alias": src_alias, "db": src_db, "table": src_table},
             {"alias": dst_alias, "db": dst_db, "table": dst_table},
             where, confirm)
+
+    @mcp.tool()
+    @_safe
+    def browse_table(alias: str, db: str, table: str,
+                     page: int = 1, page_size: int = 50,
+                     filters: list[dict] | None = None,
+                     sort_column: str | None = None,
+                     sort_dir: str = "asc") -> dict:
+        """只读浏览指定连接（alias）某库某表的数据，不修改任何数据。
+
+        alias 必须来自 list_connections，db/table 可由 list_databases/list_tables 得到。
+        filters 为 [{"column": 列名, "op": 操作符, "value": 值}] 列表，
+        op 取 eq/contains/gte/lte（等于/包含/大于等于/小于等于），列名经白名单校验。
+        sort_dir 取 asc 或 desc。page_size 默认 50、上限 200（超出即拒绝）。
+        返回 columns（列元数据）、rows（当前页行）、total（满足条件的总行数）。
+        """
+        if page_size > 200:
+            raise InvalidQueryError("page_size 不能超过 200")
+        return svc.browse_table(alias, db, table, page, page_size,
+                                filters, sort_column, sort_dir)
 
     return mcp

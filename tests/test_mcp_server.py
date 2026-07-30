@@ -125,7 +125,47 @@ def test_preview_sync_reports_diff_without_confirm(data_dir):
     assert out == [{"to_insert": 1, "to_update": 0, "sample_pks": [[1]]}]
 
 
-def test_all_five_tools_registered(data_dir):
+def test_all_tools_registered(data_dir):
     m = create_mcp(data_dir=data_dir)
     assert _tool_names(m) == {"list_connections", "list_databases", "list_tables",
-                              "preview_sync", "execute_sync"}
+                              "preview_sync", "execute_sync", "browse_table"}
+
+
+# get_columns 会把原始行的 is_pk/is_autoinc 转成 bool
+EXPECTED_COLS = [
+    {"name": "id", "type": "int", "is_pk": True, "is_autoinc": True},
+    {"name": "a", "type": "int", "is_pk": False, "is_autoinc": False},
+]
+
+
+def _browse_conn(rows, total):
+    # 单连接按序弹出：get_columns、count、数据行
+    return FakeConnection(results=[COL_META, [{"total": total}], rows])
+
+
+def test_browse_table_passthrough(data_dir):
+    rows = [{"id": 1, "a": 10}, {"id": 2, "a": 20}]
+    conn = _browse_conn(rows, 2)
+    m = create_mcp(data_dir=data_dir, connect=lambda info, db=None: conn)
+    out = _call(m, "browse_table", {"alias": "dev", "db": "s", "table": "t"})
+    assert out == [{"columns": EXPECTED_COLS, "rows": rows, "total": 2}]
+
+
+def test_browse_table_page_size_cap(data_dir):
+    m = create_mcp(data_dir=data_dir, connect=lambda info, db=None: FakeConnection())
+    with pytest.raises(Exception) as ei:
+        _call(m, "browse_table",
+              {"alias": "dev", "db": "s", "table": "t", "page_size": 500})
+    assert "[invalid_query]" in str(ei.value)
+    assert "200" in str(ei.value)
+
+
+def test_browse_table_forwards_filters(data_dir):
+    conn = _browse_conn([{"id": 1, "a": 10}], 1)
+    m = create_mcp(data_dir=data_dir, connect=lambda info, db=None: conn)
+    out = _call(m, "browse_table", {
+        "alias": "dev", "db": "s", "table": "t",
+        "filters": [{"column": "a", "op": "gte", "value": 5}]})
+    assert out == [{"columns": EXPECTED_COLS, "rows": [{"id": 1, "a": 10}], "total": 1}]
+    used = [p for _, params in conn.cursor_obj.executed for p in (params or [])]
+    assert 5 in used

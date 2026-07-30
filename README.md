@@ -35,8 +35,8 @@ uv run pytest -v
 
 ## MCP 接入（stdio）
 
-本项目同时是一个 MCP stdio server，暴露 5 个工具：
-`list_connections`、`list_databases`、`list_tables`、`preview_sync`、`execute_sync`。
+本项目同时是一个 MCP stdio server，暴露 6 个工具：
+`list_connections`、`list_databases`、`list_tables`、`browse_table`、`preview_sync`、`execute_sync`。
 
 agent 侧 `mcp.json` 配置示例（`<本项目绝对路径>` 替换为实际路径）：
 
