@@ -52,7 +52,7 @@ const RowSync = (function () {
     updateSel(name);
   }
 
-  async function load(name, alias, db, table) {
+  async function load(name, alias, db, table, preSel) {
     ensureTab();
     const columns = await TabData.fetchColumns(alias, db, table);
     const pkCols = columns.filter(c => c.is_pk).map(c => c.name);
@@ -62,6 +62,15 @@ const RowSync = (function () {
     gridEl.innerHTML = '';
     const side = { ref: { alias, db, table }, selOrder: [], pkCols, grid: null };
     side.grid = TabData.buildGrid(gridEl, side.ref, columns, true);
+    if (preSel && preSel.length) {
+      side.selOrder = preSel.slice();           // 从单表浏览带过来的勾选顺序
+      side.grid.on('dataProcessed', () => {
+        // 当前页出现被记忆的行时补上视觉勾选（rowSelected 有去重保护）
+        side.grid.getRows().forEach(r => {
+          if (side.selOrder.includes(r.getIndex()) && !r.isSelected()) r.select();
+        });
+      });
+    }
     side.grid.on('rowSelected', row => {
       const pk = row.getIndex();
       if (!side.selOrder.includes(pk)) side.selOrder.push(pk);   // 记忆勾选顺序
@@ -141,7 +150,8 @@ const RowSync = (function () {
   }
 
   return {
-    setSource: (a, db, t) => load('src', a, db, t),
+    // 第 4 参可选：从单表浏览「替换到…」带入的勾选顺序（__pk 数组）
+    setSource: (a, db, t, pre) => load('src', a, db, t, pre),
     setTarget: (a, db, t) => load('dst', a, db, t),
   };
 })();
