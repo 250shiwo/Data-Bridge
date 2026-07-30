@@ -42,4 +42,16 @@ def create_mcp(data_dir: Path | None = None, connect=open_connection) -> FastMCP
         """
         return store.list_safe()
 
+    @mcp.tool()
+    @_safe
+    def list_databases(alias: str) -> list[str]:
+        """列出指定连接（alias）上的全部数据库名。alias 必须来自 list_connections。"""
+        return svc.list_databases(alias)
+
+    @mcp.tool()
+    @_safe
+    def list_tables(alias: str, db: str) -> list[str]:
+        """列出指定连接（alias）指定库（db）下的全部表名。"""
+        return svc.list_tables(alias, db)
+
     return mcp

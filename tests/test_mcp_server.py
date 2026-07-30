@@ -54,3 +54,32 @@ def test_list_connections_no_password(data_dir):
     assert prod["protected"] is True
     raw = "".join(c.text for c in _contents(m, "list_connections"))
     assert "pw!" not in raw
+
+
+def test_list_databases_and_tables(data_dir):
+    # inspector.list_databases 取每行首个值；list_tables 取 name 字段
+    conns = [
+        FakeConnection(results=[[{"Database": "shop"}, {"Database": "logs"}]]),
+        FakeConnection(results=[[{"name": "orders"}, {"name": "users"}]]),
+    ]
+    m = create_mcp(data_dir=data_dir, connect=lambda info, db=None: conns.pop(0))
+    assert _call(m, "list_databases", {"alias": "dev"}) == ["shop", "logs"]
+    assert _call(m, "list_tables", {"alias": "dev", "db": "shop"}) == ["orders", "users"]
+
+
+def test_unknown_alias_returns_business_error(data_dir):
+    m = create_mcp(data_dir=data_dir, connect=lambda info, db=None: FakeConnection())
+    with pytest.raises(Exception) as ei:
+        _call(m, "list_databases", {"alias": "nope"})
+    assert "[connection_not_found]" in str(ei.value)
+    assert "不存在" in str(ei.value)
+
+
+def test_unknown_exception_masked(data_dir):
+    def boom(info, db=None):
+        raise RuntimeError("password=pw! leaked")
+    m = create_mcp(data_dir=data_dir, connect=boom)
+    with pytest.raises(Exception) as ei:
+        _call(m, "list_databases", {"alias": "dev"})
+    assert "服务内部错误：RuntimeError" in str(ei.value)
+    assert "pw!" not in str(ei.value)
