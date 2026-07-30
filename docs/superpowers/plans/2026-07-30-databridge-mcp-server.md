@@ -14,7 +14,7 @@
 
 - 传输方式 stdio、入口文件 `mcp_server.py`、FastMCP SDK：需求 §2 契约锁定，不可变。
 - server 名称固定 `"mysql-sync"`（agent 侧注册为 `mcp_mysql-sync_{工具名}`）。
-- 依赖新增 `mcp>=1.0`，用 `uv add` 管理。
+- 依赖新增 `mcp>=1.0,<2`（SDK 2.0 移除了 FastMCP，而需求 §2 契约锁定 FastMCP，必须钉在 1.x），用 `uv add` 管理。
 - 工具参数一律扁平化；参数与返回值只出现连接别名，永不出现密码。
 - 业务错误 → `[错误码] 中文提示`；未知异常 → `服务内部错误：{异常类名}`，不回显原文。
 - stdio 纪律：MCP 层禁止任何 `print`，stdout 是 JSON-RPC 信道。
@@ -39,10 +39,10 @@
 - [ ] **Step 1: 安装依赖**
 
 ```powershell
-uv add "mcp>=1.0"
+uv add "mcp>=1.0,<2"
 ```
 
-预期：`pyproject.toml` 的 dependencies 出现 `mcp>=1.0`，`uv.lock` 更新，无报错。
+预期：`pyproject.toml` 的 dependencies 出现 `mcp>=1.0,<2`，`uv.lock` 更新，无报错。
 
 说明：`databridge/mcp` 包名与 SDK 顶级包 `mcp` 不冲突——Python 3 绝对导入下 `from mcp.server.fastmcp import ...` 只会解析到 site-packages 的 SDK 包。
 
