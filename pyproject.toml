@@ -18,6 +18,8 @@ dev = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# 固定临时目录到项目内，规避系统 Temp 目录 ACL 异常
+addopts = "--basetemp=.pytest_tmp"
 
 [build-system]
 requires = ["hatchling"]
