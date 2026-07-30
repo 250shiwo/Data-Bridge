@@ -32,3 +32,27 @@ uv run pytest -v
 - `databridge/web/` FastAPI + 静态前端
 
 设计文档：`docs/superpowers/specs/2026-07-29-databridge-web-sync-design.md`
+
+## MCP 接入（stdio）
+
+本项目同时是一个 MCP stdio server，暴露 5 个工具：
+`list_connections`、`list_databases`、`list_tables`、`preview_sync`、`execute_sync`。
+
+agent 侧 `mcp.json` 配置示例（`<本项目绝对路径>` 替换为实际路径）：
+
+```json
+{
+  "mcpServers": {
+    "mysql-sync": {
+      "command": "uv",
+      "args": ["--directory", "<本项目绝对路径>", "run", "python", "mcp_server.py"]
+    }
+  }
+}
+```
+
+说明：
+
+- 连接只能在 Web GUI 中添加/编辑，MCP 工具一律按别名引用，凭据永不出现在参数或返回值中；
+- 向受保护连接写入时 `execute_sync` 必须显式携带 `confirm=true`，否则拒绝；
+- 推荐流程：先 `preview_sync` 预览差异并向用户汇报，确认后再 `execute_sync`。

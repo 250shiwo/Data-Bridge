@@ -123,3 +123,9 @@ def test_preview_sync_reports_diff_without_confirm(data_dir):
     m = create_mcp(data_dir=data_dir, connect=lambda info, db=None: conns.pop(0))
     out = _call(m, "preview_sync", SYNC_ARGS)   # 目标受保护，但读操作不需要 confirm
     assert out == [{"to_insert": 1, "to_update": 0, "sample_pks": [[1]]}]
+
+
+def test_all_five_tools_registered(data_dir):
+    m = create_mcp(data_dir=data_dir)
+    assert _tool_names(m) == {"list_connections", "list_databases", "list_tables",
+                              "preview_sync", "execute_sync"}
