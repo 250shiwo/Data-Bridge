@@ -63,6 +63,11 @@ if __name__ == "__main__":
 **硬点：`data/` 必须挂卷持久化**。否则容器重启后连接丢失，且 `.key` 重新生成会使
 已存密码永久无法解密。命名卷保证两服务共享且重启不丢。
 
+**安全提醒：`/mcp` 端点无鉴权**（本迭代不做 auth，与 client 方案一致）。任何能连到
+MCP 端口的调用方都能调 `execute_sync`（`confirm=true` 可自行携带，护栏拦不住有意调用）。
+因此部署时不要把 MCP 端口暴露到公网：compose 中 `mcp` 端口只在可信网段/内网映射，
+agent 与 mcp 走同一 docker 网络通信。
+
 ### Dockerfile 要点
 - 基础镜像 `python:3.11-slim`；`pip install uv`；
 - 先 `COPY pyproject.toml uv.lock` 再 `uv sync --frozen --no-dev`（利用层缓存、不装 dev 依赖）；
