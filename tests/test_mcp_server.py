@@ -83,3 +83,43 @@ def test_unknown_exception_masked(data_dir):
         _call(m, "list_databases", {"alias": "dev"})
     assert "服务内部错误：RuntimeError" in str(ei.value)
     assert "pw!" not in str(ei.value)
+
+
+COL_META = [
+    {"name": "id", "type": "int", "is_pk": 1, "is_autoinc": 1},
+    {"name": "a", "type": "int", "is_pk": 0, "is_autoinc": 0},
+]
+
+SYNC_ARGS = {"src_alias": "dev", "src_db": "s", "src_table": "t",
+             "dst_alias": "prod", "dst_db": "d", "dst_table": "t"}
+
+
+def _sync_conns():
+    """源/目标 fake 连接。源按序弹出：get_columns、第 1 批 1 行、空批终止；
+    目标按序弹出：get_columns、按主键查现有行（空 → 差异为 1 行新增）。"""
+    return [
+        FakeConnection(results=[COL_META, [{"id": 1, "a": 10}], []]),  # 源
+        FakeConnection(results=[COL_META, []]),                        # 目标
+    ]
+
+
+def test_execute_sync_protected_rejected(data_dir):
+    m = create_mcp(data_dir=data_dir, connect=lambda info, db=None: FakeConnection())
+    with pytest.raises(Exception) as ei:
+        _call(m, "execute_sync", SYNC_ARGS)   # confirm 缺省 False
+    assert "[protected_connection]" in str(ei.value)
+    assert "受保护" in str(ei.value)
+
+
+def test_execute_sync_protected_confirmed(data_dir):
+    conns = _sync_conns()
+    m = create_mcp(data_dir=data_dir, connect=lambda info, db=None: conns.pop(0))
+    out = _call(m, "execute_sync", dict(SYNC_ARGS, confirm=True))
+    assert out == [{"inserted": 1, "updated": 0}]
+
+
+def test_preview_sync_reports_diff_without_confirm(data_dir):
+    conns = _sync_conns()
+    m = create_mcp(data_dir=data_dir, connect=lambda info, db=None: conns.pop(0))
+    out = _call(m, "preview_sync", SYNC_ARGS)   # 目标受保护，但读操作不需要 confirm
+    assert out == [{"to_insert": 1, "to_update": 0, "sample_pks": [[1]]}]

@@ -54,4 +54,37 @@ def create_mcp(data_dir: Path | None = None, connect=open_connection) -> FastMCP
         """列出指定连接（alias）指定库（db）下的全部表名。"""
         return svc.list_tables(alias, db)
 
+    @mcp.tool()
+    @_safe
+    def preview_sync(src_alias: str, src_db: str, src_table: str,
+                     dst_alias: str, dst_db: str, dst_table: str,
+                     where: str | None = None) -> dict:
+        """dry-run 比对源表与目标表的差异，不写任何数据。
+
+        返回 to_insert（目标缺失行数）、to_update（内容不同行数）、
+        sample_pks（差异行主键示例，最多 10 个）。
+        执行 execute_sync 前必须先调用本工具，并把结果汇报给用户确认。
+        where 为可选的源表过滤 SQL 条件（如 "id > 100"），只作用于源表读取。
+        """
+        return svc.preview_sync(
+            {"alias": src_alias, "db": src_db, "table": src_table},
+            {"alias": dst_alias, "db": dst_db, "table": dst_table}, where)
+
+    @mcp.tool()
+    @_safe
+    def execute_sync(src_alias: str, src_db: str, src_table: str,
+                     dst_alias: str, dst_db: str, dst_table: str,
+                     where: str | None = None, confirm: bool = False) -> dict:
+        """真正执行增量同步：新增 + 同主键 upsert 覆盖，绝不删除目标行。
+
+        调用前必须先用 preview_sync 预览差异并经用户确认。
+        目标为受保护连接（list_connections 中 protected=true）时必须
+        显式传 confirm=true，否则拒绝执行。
+        返回 inserted / updated 行数统计。
+        """
+        return svc.execute_sync(
+            {"alias": src_alias, "db": src_db, "table": src_table},
+            {"alias": dst_alias, "db": dst_db, "table": dst_table},
+            where, confirm)
+
     return mcp
