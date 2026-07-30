@@ -104,11 +104,11 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
 
     @app.post("/api/connections/test")
     def test_connection(body: ConnBody):
-        info = ConnectionInfo(**body.model_dump())
+        data = body.model_dump()
         if body.password == "":
-            # 编辑态不改密码时，用已存密码测试
-            info = store.get(body.alias)
-        ok = check_connection(info)
+            # 编辑态未改密码：仅从已存配置回填密码，其余字段用表单最新值
+            data["password"] = store.get(body.alias).password
+        ok = check_connection(ConnectionInfo(**data))
         return {"ok": ok}
 
     # ---------- 元数据与浏览 ----------

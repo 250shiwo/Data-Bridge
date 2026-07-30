@@ -55,3 +55,20 @@ def test_sync_execute_also_guarded(client):
         "dst": {"alias": "prod", "db": "d", "table": "t"},
         "confirm": False})
     assert r.status_code == 403
+
+
+def test_test_connection_blank_password_keeps_form_edits(client, monkeypatch):
+    """编辑态留空密码测试连接：保留表单最新 host/user，仅回填已存密码。"""
+    import databridge.web.app as app_mod
+    client.post("/api/connections", json=CONN_BODY)   # 存 host=127.0.0.1 / password=pw!
+    captured = {}
+    monkeypatch.setattr(app_mod, "check_connection", lambda info: captured.update(
+        host=info.host, user=info.user, password=info.password) or True)
+    # 编辑：改 host/user，密码留空提交
+    r = client.post("/api/connections/test",
+                    json=dict(CONN_BODY, host="10.0.0.9", user="admin", password=""))
+    assert r.status_code == 200
+    assert r.json() == {"ok": True}
+    assert captured["host"] == "10.0.0.9"   # 表单最新值，不被旧配置整体覆盖
+    assert captured["user"] == "admin"
+    assert captured["password"] == "pw!"    # 仅密码从已存配置回填
