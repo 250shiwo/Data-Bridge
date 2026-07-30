@@ -112,6 +112,7 @@
 | `index.html` | 三区外壳骨架 + 样式（沿用卡片风格） | 重写 |
 | `js/api.js` | api / toast / showConfirm / loadConnections | 保留不动 |
 | `js/util.js` | `esc()` 等转义助手 | 新增 |
+| `js/layout.js` | 外壳三区组装 + 左栏拖拽调宽 | 新增 |
 | `js/tabs.js` | 标签管理器 | 新增 |
 | `js/tree.js` | 对象树 + 右键菜单 | 新增 |
 | `js/dlg-connection.js` | 连接对话框 | 新增 |
