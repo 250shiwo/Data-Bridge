@@ -10,7 +10,7 @@ _IDENT_RE = re.compile(r"^[0-9A-Za-z_$]+$")
 
 def ensure_identifier(name: str) -> str:
     """校验库/表/列标识符只含安全字符，否则拒绝（防 SQL 注入）。"""
-    if not name or not _IDENT_RE.match(name):
+    if not name or not _IDENT_RE.fullmatch(name):
         raise InvalidQueryError(f"非法标识符：{name!r}")
     return name
 

@@ -60,3 +60,5 @@ def test_ensure_identifier():
     assert inspector.ensure_identifier("my_table$1") == "my_table$1"
     with pytest.raises(InvalidQueryError):
         inspector.ensure_identifier("t; DROP TABLE x")
+    with pytest.raises(InvalidQueryError):
+        inspector.ensure_identifier("t1\n")   # 末尾换行不得逃逸 $ 锚定
