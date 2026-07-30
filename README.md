@@ -1,6 +1,6 @@
 # DataBridge — MySQL 表数据同步工具
 
-一套同步引擎，两副面孔（本迭代交付 Web GUI，MCP 入口下迭代接入）。
+一套同步引擎，两副面孔（Web GUI + MCP stdio server）。
 
 ## 功能
 
@@ -26,7 +26,7 @@ uv run pytest -v
 
 ## 目录结构
 
-- `databridge/engine/` 同步引擎（纯逻辑，无 Web 依赖，未来 MCP 直接复用）
+- `databridge/engine/` 同步引擎（纯逻辑，无 Web 依赖，Web 与 MCP 入口共用）
 - `databridge/storage/` 连接配置加密存储
 - `databridge/service.py` 护栏 + 用例编排（入口层共用）
 - `databridge/web/` FastAPI + 静态前端
