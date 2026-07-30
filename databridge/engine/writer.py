@@ -3,7 +3,15 @@
 全部写操作单事务：任一行失败整体回滚后重抛，由上层转成结构化错误。
 """
 from databridge.engine.inspector import ensure_identifier
-from databridge.errors import InvalidQueryError, SelectionCountMismatchError
+from databridge.errors import (InvalidQueryError, SelectionCountMismatchError,
+                               WriteConflictError)
+import pymysql.err
+
+
+def _conflict_message(exc, action: str) -> str:
+    """把 pymysql 完整性错误转成中文业务提示，并保留 MySQL 的具体原因。"""
+    detail = exc.args[1] if len(exc.args) > 1 else str(exc)
+    return f"{action}失败：目标表存在数据完整性冲突（{detail}）"
 
 
 def _qualify(db: str, table: str) -> str:
@@ -50,6 +58,9 @@ def append_rows(conn, db, table, columns, rows) -> int:
         with conn.cursor() as cur:
             cur.executemany(sql, batch)
         conn.commit()
+    except pymysql.err.IntegrityError as e:
+        conn.rollback()
+        raise WriteConflictError(_conflict_message(e, "新增")) from e
     except Exception:
         conn.rollback()
         raise
@@ -70,6 +81,9 @@ def replace_rows(conn, db, table, columns, pk_cols, src_rows, dst_pk_values) -> 
             for src_row, dst_pk in zip(src_rows, dst_pk_values):
                 cur.execute(sql, [src_row[n] for n in set_cols] + list(dst_pk))
         conn.commit()
+    except pymysql.err.IntegrityError as e:
+        conn.rollback()
+        raise WriteConflictError(_conflict_message(e, "替换")) from e
     except Exception:
         conn.rollback()
         raise

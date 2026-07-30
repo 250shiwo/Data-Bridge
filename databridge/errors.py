@@ -42,5 +42,11 @@ class SelectionCountMismatchError(DataBridgeError):
     code = "selection_count_mismatch"
 
 
+class WriteConflictError(DataBridgeError):
+    # 写入违反目标表约束（如唯一键/外键/非空），用 409 表达“资源冲突”
+    code = "write_conflict"
+    http_status = 409
+
+
 class InvalidQueryError(DataBridgeError):
     code = "invalid_query"

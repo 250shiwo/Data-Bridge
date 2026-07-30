@@ -2,7 +2,8 @@
 import pytest
 
 from databridge.engine import writer
-from databridge.errors import InvalidQueryError, SelectionCountMismatchError
+from databridge.errors import (InvalidQueryError, SelectionCountMismatchError,
+                               WriteConflictError)
 from tests.conftest import FakeConnection
 
 
@@ -40,6 +41,19 @@ def test_append_rows_rolls_back_on_error():
         writer.append_rows(conn, "d", "t", COLS_AUTOINC, [{"id": 1, "a": 1, "b": 2}])
     assert conn.rolled_back is True
     assert conn.committed is False
+
+
+def test_append_rows_maps_integrity_error_to_conflict():
+    """唯一键冲突等完整性错误应转成业务冲突错误（带 MySQL 原因）。"""
+    import pymysql.err
+    conn = FakeConnection(error=pymysql.err.IntegrityError(
+        1062, "Duplicate entry '开发' for key 'auth_group.name'"))
+    with pytest.raises(WriteConflictError) as ei:
+        writer.append_rows(conn, "d", "t", COLS_AUTOINC, [{"id": 1, "a": 1, "b": 2}])
+    assert conn.rolled_back is True
+    assert conn.committed is False
+    assert "Duplicate entry" in ei.value.message   # 保留 MySQL 具体原因
+    assert "新增" in ei.value.message              # 中文动作词
 
 
 def test_replace_rows_count_mismatch():
