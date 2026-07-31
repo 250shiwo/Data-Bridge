@@ -1,0 +1,11 @@
+data/
+.venv/
+.git/
+.gitignore
+.pytest_cache/
+.pytest_tmp/
+.superpowers/
+**/__pycache__/
+*.pyc
+docs/
+tests/

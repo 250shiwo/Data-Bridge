@@ -1,0 +1,24 @@
+# 两副面孔：web 加连接、mcp 供 agent 调用，共享同一份加密连接卷。
+services:
+  web:
+    build: .
+    command: uv run uvicorn databridge.web.app:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - databridge-data:/app/data
+
+  mcp:
+    build: .
+    environment:
+      MCP_TRANSPORT: streamable-http
+      MCP_HOST: 0.0.0.0
+      MCP_PORT: "8100"
+    # 安全：MCP 端点无鉴权，仅在可信网段/内网映射，勿暴露公网
+    ports:
+      - "127.0.0.1:8100:8100"
+    volumes:
+      - databridge-data:/app/data
+
+volumes:
+  databridge-data:
